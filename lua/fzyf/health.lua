@@ -4,9 +4,6 @@ local M = {}
 ---Required binaries for the plugin to work
 local REQUIRED_BINARIES = { "fzy", "fd" }
 
----Optional binaries that enhance functionality
-local OPTIONAL_BINARIES = { "rg" }
-
 ---Check if a binary is executable
 ---@param binary string Name of the binary
 ---@return boolean
@@ -26,18 +23,6 @@ function M.check()
       vim.health.error(
         string.format("'%s' is NOT installed", binary),
         string.format("Install '%s' to use fzyf.nvim", binary)
-      )
-    end
-  end
-
-  -- Check optional binaries
-  for _, binary in ipairs(OPTIONAL_BINARIES) do
-    if is_executable(binary) then
-      vim.health.ok(string.format("'%s' is installed (optional)", binary))
-    else
-      vim.health.warn(
-        string.format("'%s' is NOT installed (optional)", binary),
-        string.format("Install '%s' for live grep functionality", binary)
       )
     end
   end

@@ -11,15 +11,11 @@
 ---@field limit number|fun():number Maximum results to show
 ---@field cwd string|nil Working directory (nil for current)
 
----@class FzyfGrepConfig
----@field cmd string Command to use for grep
----@field args string[] Arguments for the grep command
----@field limit number Maximum results to show
-
----@class FzyfPickerConfig
----@field debounce_ms number Debounce time in milliseconds
-
 ---@class FzyfCacheConfig
+---@field enabled boolean Enable caching
+---@field ttl number Time to live in milliseconds
+---@field max_items number Maximum items to cache
+
 ---@class FzyfKeymaps
 ---@field exit string Key to exit the picker
 ---@field select string Key to select item
@@ -27,8 +23,6 @@
 ---@class FzyfConfig
 ---@field win FzyfWindowConfig Window configuration
 ---@field find_files FzyfFindConfig Find files configuration
----@field live_grep FzyfGrepConfig Live grep configuration
----@field picker FzyfPickerConfig Picker configuration
 ---@field cache FzyfCacheConfig Cache configuration
 ---@field keymaps FzyfKeymaps Keymap configuration
 ---@field use_native_fzy boolean Use fzy-lua-native if available
@@ -38,7 +32,6 @@ local M = {}
 -- Constants
 M.WIN_MARGIN_HORIZONTAL = 30
 M.WIN_MARGIN_VERTICAL = 10
-M.GREP_RESULT_LIMIT = 25
 M.CACHE_TTL = 60000 -- 60 seconds
 M.CACHE_MAX_ITEMS = 10000
 
@@ -62,14 +55,6 @@ M.defaults = {
       return vim.o.lines - M.WIN_MARGIN_VERTICAL
     end,
     cwd = nil,
-  },
-  live_grep = {
-    cmd = "rg",
-    args = {}, -- Args are now built dynamically in grep_job.lua
-    limit = M.GREP_RESULT_LIMIT,
-  },
-  picker = {
-    debounce_ms = 100,
   },
   cache = {
     enabled = true,

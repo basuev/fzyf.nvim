@@ -22,11 +22,8 @@ M.native = require("fzyf.native")
 -- Expose commands as direct functions for cleaner API
 -- Usage: require('fzyf').find_files() instead of require('fzyf').commands.find_files()
 M.find_files = function() return M.commands.find_files() end
-M.live_grep = function() return M.commands.live_grep() end
 M.find_config = function() return M.commands.find_config() end
 M.buffers = function() return M.commands.buffers() end
-M.git_files = function() return M.commands.git_files() end
-M.git_status = function() return M.commands.git_status() end
 
 -- Flag to track setup state
 M._setup_done = false
@@ -49,11 +46,6 @@ function M.setup(opts)
     M.utils.warn(
       string.format("Required binary '%s' not found. Some features may not work.", missing)
     )
-  end
-
-  -- Check optional rg for live grep
-  if not M.utils.has_binary("rg") then
-    M.utils.warn("'rg' not found. LiveGrep command will not work.")
   end
 
   -- Initialize native fzy if available
@@ -79,12 +71,6 @@ function M._register_commands()
     desc = "Find files in current directory",
   })
 
-  vim.api.nvim_create_user_command("FzyfLiveGrep", function()
-    M.commands.live_grep()
-  end, {
-    desc = "Live grep in current directory",
-  })
-
   vim.api.nvim_create_user_command("FzyfLookupConfig", function()
     M.commands.find_config()
   end, {
@@ -95,18 +81,6 @@ function M._register_commands()
     M.commands.buffers()
   end, {
     desc = "Find open buffers",
-  })
-
-  vim.api.nvim_create_user_command("FzyfGitFiles", function()
-    M.commands.git_files()
-  end, {
-    desc = "Find git tracked files",
-  })
-
-  vim.api.nvim_create_user_command("FzyfGitStatus", function()
-    M.commands.git_status()
-  end, {
-    desc = "Find modified git files",
   })
 end
 

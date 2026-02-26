@@ -15,10 +15,10 @@ fast and minimal Neovim fuzzy finder that uses fzy under the hood
 
 ## features
 
-- minimal codebase (~1000 loc)
+- minimal codebase (~800 loc)
 - fast fuzzy matching with fzy
 - configurable floating window
-- multiple pickers: files, grep, buffers, git
+- pickers: files, config files, buffers
 - optional caching
 - health checks via `:checkhealth fzyf`
 - works with Neovim 0.9+
@@ -29,7 +29,6 @@ fast and minimal Neovim fuzzy finder that uses fzy under the hood
 |------------|-----------|---------|---------|
 | [fzy](https://github.com/jhawthorn/fzy) | yes | fuzzy matching | `brew install fzy` / `apt install fzy` |
 | [fd](https://github.com/sharkdp/fd) | yes | file finding | `brew install fd` / `apt install fd` |
-| [ripgrep](https://github.com/burntSushi/ripgrep) | recommended | live grep | `brew install ripgrep` / `apt install ripgrep` |
 | [fzy-lua-native](https://github.com/romgrk/fzy-lua-native) | optional | faster native matching | see [native fzy](#native-fzy) |
 
 ## installation
@@ -72,7 +71,7 @@ require("fzyf").setup()
 
 -- set your keymaps (recommended: function-based)
 vim.keymap.set("n", "<c-p>", function() require("fzyf").find_files() end, { desc = "Find files" })
-vim.keymap.set("n", "<c-g>", function() require("fzyf").live_grep() end, { desc = "Live grep" })
+vim.keymap.set("n", "<c-c>", function() require("fzyf").find_config() end, { desc = "Find config" })
 vim.keymap.set("n", "<c-b>", function() require("fzyf").buffers() end, { desc = "Find buffers" })
 
 -- alternative: command-based keymaps
@@ -86,11 +85,8 @@ that's it. press `<c-p>` to find files.
 | Command | Description |
 |---------|-------------|
 | `:FzyfFindFile` | Find files in current directory |
-| `:FzyfLiveGrep` | Live grep search |
 | `:FzyfLookupConfig` | Find files in Neovim config directory |
 | `:FzyfBuffers` | Find open buffers |
-| `:FzyfGitFiles` | Find git tracked files |
-| `:FzyfGitStatus` | Find modified git files |
 
 ## API
 
@@ -100,14 +96,12 @@ you can also call functions directly for more control:
 local fzyf = require("fzyf")
 
 fzyf.find_files()    -- Find files
-fzyf.live_grep()     -- Live grep
-fzyf.buffers()       -- Find buffers
-fzyf.git_files()     -- Git tracked files
-fzyf.git_status()    -- Git modified files
 fzyf.find_config()   -- Neovim config files
+fzyf.buffers()       -- Find buffers
 ```
 
 this is useful for custom keymaps or integration with other plugins.
+
 ## configuration
 
 ```lua
@@ -121,11 +115,6 @@ require("fzyf").setup({
     cmd = "fd",
     args = { "-tf", "-cnever", "." },
     limit = function() return vim.o.lines - 10 end,
-  },
-  live_grep = {
-    cmd = "rg",
-    args = { "-i", "--vimgrep", "." },
-    limit = 25,
   },
   cache = {
     enabled = true,
@@ -148,9 +137,6 @@ require("fzyf").setup({
 | `find_files.cmd` | `string` | `"fd"` | command for finding files |
 | `find_files.args` | `string[]` | `{ "-tf", "-cnever", "." }` | arguments for find command |
 | `find_files.limit` | `number\|fun()` | `lines - 10` | max results to show |
-| `live_grep.cmd` | `string` | `"rg"` | command for grep |
-| `live_grep.args` | `string[]` | `{ "-i", "--vimgrep", "." }` | arguments for grep |
-| `live_grep.limit` | `number` | `25` | max results to show |
 | `cache.enabled` | `boolean` | `true` | enable caching |
 | `cache.ttl` | `number` | `60000` | cache ttl in ms |
 | `cache.max_items` | `number` | `10000` | max cached items |
@@ -184,7 +170,6 @@ run `:checkhealth fzyf` to verify your setup:
 fzyf.nvim: dependencies
   ok 'fzy' is installed
   ok 'fd' is installed
-  ok 'rg' is installed (optional)
 
 fzyf.nvim: version
   ok Neovim v0.10.0 (supported)
@@ -216,21 +201,6 @@ sudo apt install fzy
 sudo pacman -s fzy
 ```
 
-### live grep not working
-
-install ripgrep:
-
-```bash
-# macOS
-brew install ripgrep
-
-# Ubuntu/Debian
-sudo apt install ripgrep
-
-# Arch
-sudo pacman -s ripgrep
-```
-
 ### window size issues
 
 adjust window dimensions in config:
@@ -259,7 +229,7 @@ vim.keymap.set("n", "<c-p>", function() require("fzyf").find_files() end)
 
 | feature | fzyf.nvim | telescope.nvim | fzf-lua |
 |---------|-----------|----------------|---------|
-| lines of code | ~1,200 | ~15,000+ | ~10,000+ |
+| lines of code | ~800 | ~15,000+ | ~10,000+ |
 | dependencies | fzy, fd | plenary + more | fzf |
 | preview | no | yes | yes |
 | speed | fast | medium | fast |
