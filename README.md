@@ -5,7 +5,7 @@
 ![neovim version](https://img.shields.io/badge/neovim-0.9+-57a143?style=flat-square&logo=neovim)
 ![license](https://img.shields.io/badge/license-mit-yellow?style=flat-square)
 
-fast and minimal neovim fuzzy finder that uses fzy under the hood
+fast and minimal Neovim fuzzy finder that uses fzy under the hood
 
 [installation](#installation) · [quick start](#quick-start) · [configuration](#configuration) · [commands](#commands)
 
@@ -21,7 +21,7 @@ fast and minimal neovim fuzzy finder that uses fzy under the hood
 - multiple pickers: files, grep, buffers, git
 - optional caching
 - health checks via `:checkhealth fzyf`
-- works with neovim 0.9+
+- works with Neovim 0.9+
 
 ## requirements
 
@@ -70,25 +70,44 @@ get started in 30 seconds:
 ```lua
 require("fzyf").setup()
 
--- set your keymaps
-vim.keymap.set("n", "<c-p>", ":fzyffindfile<cr>", { desc = "find files" })
-vim.keymap.set("n", "<c-g>", ":fzyflivegrep<cr>", { desc = "live grep" })
-vim.keymap.set("n", "<c-b>", ":fzyfbuffers<cr>", { desc = "find buffers" })
+-- set your keymaps (recommended: function-based)
+vim.keymap.set("n", "<c-p>", function() require("fzyf").find_files() end, { desc = "Find files" })
+vim.keymap.set("n", "<c-g>", function() require("fzyf").live_grep() end, { desc = "Live grep" })
+vim.keymap.set("n", "<c-b>", function() require("fzyf").buffers() end, { desc = "Find buffers" })
+
+-- alternative: command-based keymaps
+-- vim.keymap.set("n", "<c-p>", "<cmd>FzyfFindFile<cr>", { desc = "Find files" })
 ```
 
 that's it. press `<c-p>` to find files.
 
 ## commands
 
-| command | description |
+| Command | Description |
 |---------|-------------|
-| `:fzyffindfile` | find files in current directory |
-| `:fzyflivegrep` | live grep search |
-| `:fzyflookupconfig` | find files in neovim config directory |
-| `:fzyfbuffers` | find open buffers |
-| `:fzyfgitfiles` | find git tracked files |
-| `:fzyfgitstatus` | find modified git files |
+| `:FzyfFindFile` | Find files in current directory |
+| `:FzyfLiveGrep` | Live grep search |
+| `:FzyfLookupConfig` | Find files in Neovim config directory |
+| `:FzyfBuffers` | Find open buffers |
+| `:FzyfGitFiles` | Find git tracked files |
+| `:FzyfGitStatus` | Find modified git files |
 
+## API
+
+you can also call functions directly for more control:
+
+```lua
+local fzyf = require("fzyf")
+
+fzyf.find_files()    -- Find files
+fzyf.live_grep()     -- Live grep
+fzyf.buffers()       -- Find buffers
+fzyf.git_files()     -- Git tracked files
+fzyf.git_status()    -- Git modified files
+fzyf.find_config()   -- Neovim config files
+```
+
+this is useful for custom keymaps or integration with other plugins.
 ## configuration
 
 ```lua
@@ -168,7 +187,7 @@ fzyf.nvim: dependencies
   ok 'rg' is installed (optional)
 
 fzyf.nvim: version
-  ok neovim v0.10.0 (supported)
+  ok Neovim v0.10.0 (supported)
 ```
 
 ## troubleshooting
@@ -187,13 +206,13 @@ which fzy  # should return something like /usr/local/bin/fzy
 if not, install it:
 
 ```bash
-# macos
+# macOS
 brew install fzy
 
-# ubuntu/debian
+# Ubuntu/Debian
 sudo apt install fzy
 
-# arch
+# Arch
 sudo pacman -s fzy
 ```
 
@@ -202,13 +221,13 @@ sudo pacman -s fzy
 install ripgrep:
 
 ```bash
-# macos
+# macOS
 brew install ripgrep
 
-# ubuntu/debian
+# Ubuntu/Debian
 sudo apt install ripgrep
 
-# arch
+# Arch
 sudo pacman -s ripgrep
 ```
 
@@ -231,7 +250,7 @@ make sure you're calling `setup()` before setting keymaps:
 
 ```lua
 require("fzyf").setup()
-vim.keymap.set("n", "<c-p>", ":fzyffindfile<cr>")
+vim.keymap.set("n", "<c-p>", function() require("fzyf").find_files() end)
 ```
 
 </details>
@@ -246,16 +265,16 @@ vim.keymap.set("n", "<c-p>", ":fzyffindfile<cr>")
 | speed | fast | medium | fast |
 | setup complexity | minimal | medium | medium |
 
-pick fzyf.nvim if you want minimal and fast.
-pick telescope/fzf-lua if you need previews and more features.
+Pick fzyf.nvim if you want minimal and fast.
+Pick telescope/fzf-lua if you need previews and more features.
 
 ## related projects
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) - highly extendable fuzzy finder
-- [fzf-lua](https://github.com/ibhagwan/fzf-lua) - fzf integration for neovim
+- [fzf-lua](https://github.com/ibhagwan/fzf-lua) - fzf integration for Neovim
 - [mini.pick](https://github.com/echasnovski/mini.pick) - minimal picker module
 - [snacks.picker](https://github.com/folke/snacks.nvim) - picker from snacks.nvim
 
 ## license
 
-mit
+MIT
