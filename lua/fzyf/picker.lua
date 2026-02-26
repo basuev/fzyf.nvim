@@ -23,6 +23,7 @@ M.on_query_change = nil
 M.on_select = nil
 M.debounce_timer = nil
 M.querytick = 0
+M.last_query = nil -- Track last query to avoid redundant updates
 
 ---Constants
 M.PROMPT_LINE = 1
@@ -150,6 +151,38 @@ end
 local function handle_query_change()
   local query = get_query()
 
+  -- Skip if query hasn't changed (prevents loop when set_items modifies buffer)
+  if query == M.last_query then
+    return
+  end
+  M.last_query = query
+
+  -- Cancel existing timer
+  if M.debounce_timer then
+    M.debounce_timer:stop()
+  end
+
+  -- Increment querytick for invalidation
+  M.querytick = M.querytick + 1
+  local tick = M.querytick
+
+  -- Debounce
+  local debounce_ms = config.get_value("picker.debounce_ms") or 100
+
+  if not M.debounce_timer then
+    M.debounce_timer = vim.loop.new_timer()
+  end
+
+  M.debounce_timer:start(debounce_ms, 0, vim.schedule_wrap(function()
+    -- Only process if still current
+    if tick == M.querytick and M.on_query_change then
+      M.on_query_change(query)
+    end
+  end))
+end
+local function handle_query_change()
+  local query = get_query()
+
   -- Cancel existing timer
   if M.debounce_timer then
     M.debounce_timer:stop()
@@ -204,6 +237,15 @@ local function setup_keymaps()
     vim.cmd("stopinsert")
     M.close()
   end, { buffer = M.buf, nowait = true })
+
+  -- Prevent backspace from deleting prompt
+  vim.keymap.set("i", "<BS>", function()
+    local col = vim.api.nvim_win_get_cursor(0)[2]
+    if col <= #M.prompt then
+      return -- Ignore backspace at or before prompt
+    end
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<BS>", true, false, true), "n", false)
+  end, { buffer = M.buf, nowait = true })
 end
 
 ---Set up buffer attachment for input monitoring
@@ -229,8 +271,9 @@ function M.open(opts)
   M.on_select = opts.on_select
   M.prompt = opts.prompt or "> "
   M.items = {}
-  M.selected_idx = 1
-  M.querytick = 0
+M.selected_idx = 1
+M.querytick = 0
+M.last_query = nil
 
   -- Create window
   local win_opts = {}
@@ -259,9 +302,11 @@ function M.open(opts)
   -- Enter insert mode
   vim.cmd("startinsert!")
 
+  -- Prevent backspace from deleting prompt
+  vim.bo[M.buf].indentkeys = ""
+
   return M.buf, M.win
 end
-
 ---Check if picker is active
 ---@return boolean
 function M.is_active()
