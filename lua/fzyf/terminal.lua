@@ -25,8 +25,7 @@ end
 ---@param on_exit fun(exit_code: number, selection: string|nil) Callback on exit
 ---@return number|nil job_id
 local function open_terminal_job(cmd, buf, on_exit)
-  -- Set buffer as terminal
-  vim.bo[buf].buftype = "terminal"
+  -- Note: buftype is set automatically by jobstart with term=true
 
   -- Use jobstart with term=true for Neovim 0.11+, termopen for older
   local job_id

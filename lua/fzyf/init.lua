@@ -19,6 +19,15 @@ M.utils = require("fzyf.utils")
 M.health = require("fzyf.health")
 M.native = require("fzyf.native")
 
+-- Expose commands as direct functions for cleaner API
+-- Usage: require('fzyf').find_files() instead of require('fzyf').commands.find_files()
+M.find_files = function() return M.commands.find_files() end
+M.live_grep = function() return M.commands.live_grep() end
+M.find_config = function() return M.commands.find_config() end
+M.buffers = function() return M.commands.buffers() end
+M.git_files = function() return M.commands.git_files() end
+M.git_status = function() return M.commands.git_status() end
+
 -- Flag to track setup state
 M._setup_done = false
 
