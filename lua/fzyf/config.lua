@@ -16,11 +16,10 @@
 ---@field args string[] Arguments for the grep command
 ---@field limit number Maximum results to show
 
----@class FzyfCacheConfig
----@field enabled boolean Enable caching
----@field ttl number Time to live in milliseconds
----@field max_items number Maximum items to cache
+---@class FzyfPickerConfig
+---@field debounce_ms number Debounce time in milliseconds
 
+---@class FzyfCacheConfig
 ---@class FzyfKeymaps
 ---@field exit string Key to exit the picker
 ---@field select string Key to select item
@@ -29,6 +28,7 @@
 ---@field win FzyfWindowConfig Window configuration
 ---@field find_files FzyfFindConfig Find files configuration
 ---@field live_grep FzyfGrepConfig Live grep configuration
+---@field picker FzyfPickerConfig Picker configuration
 ---@field cache FzyfCacheConfig Cache configuration
 ---@field keymaps FzyfKeymaps Keymap configuration
 ---@field use_native_fzy boolean Use fzy-lua-native if available
@@ -65,8 +65,11 @@ M.defaults = {
   },
   live_grep = {
     cmd = "rg",
-    args = { "-i", "--vimgrep", "--max-count=10", "--max-filesize=1M", "." },
+    args = {}, -- Args are now built dynamically in grep_job.lua
     limit = M.GREP_RESULT_LIMIT,
+  },
+  picker = {
+    debounce_ms = 100,
   },
   cache = {
     enabled = true,

@@ -5,6 +5,9 @@ local terminal = require("fzyf.terminal")
 local config = require("fzyf.config")
 local cache = require("fzyf.cache")
 local utils = require("fzyf.utils")
+local picker = require("fzyf.picker")
+local grep_job = require("fzyf.grep_job")
+local native = require("fzyf.native")
 
 ---Build find files command
 ---@return string cmd
@@ -94,7 +97,7 @@ function M.find_config()
   })
 end
 
----Live grep in current directory
+---Live grep in current directory (using interactive picker)
 function M.live_grep()
   -- Check for rg
   if not utils.has_binary("rg") then
@@ -109,17 +112,55 @@ function M.live_grep()
     return
   end
 
-  local cmd, limit = build_grep_cmd()
-  local fzy_cmd = terminal.fzy_cmd(limit)
-  -- Use single awk pass for deduplication and formatting
-  local full_cmd = cmd
-    .. " | awk -F':' '!seen[$1\":\"$2]++' | "
-    .. fzy_cmd
+  local limit = config.get_value("live_grep.limit") or 25
+  local querytick = 0
 
-  terminal.open(full_cmd, function(selection)
-    open_selection(selection, true)
-  end, {
+  -- Open picker with query callback
+  picker.open({
     title = " Live Grep ",
+    on_query_change = function(query)
+      -- Increment querytick for invalidation
+      querytick = querytick + 1
+      local tick = querytick
+
+      -- Handle empty query
+      if not query or query == "" then
+        picker.set_items({})
+        return
+      end
+
+      -- Spawn grep job
+      grep_job.spawn(query, {
+        on_result = function(line)
+          -- Results are collected in grep_job
+        end,
+        on_done = function(results)
+          -- Ignore stale results
+          if tick ~= querytick then
+            return
+          end
+
+          -- Filter and limit results
+          local filtered = results
+          if native.is_available() then
+            filtered = native.filter(query, results, limit)
+          else
+            -- Fallback: substring match
+            filtered = vim.tbl_filter(function(line)
+              return line:lower():find(query:lower(), 1, true)
+            end, results)
+            if #filtered > limit then
+              filtered = vim.list_slice(filtered, 1, limit)
+            end
+          end
+
+          picker.set_items(filtered)
+        end,
+      })
+    end,
+    on_select = function(selection)
+      open_selection(selection, true)
+    end,
   })
 end
 
