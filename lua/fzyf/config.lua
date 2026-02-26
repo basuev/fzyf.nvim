@@ -65,7 +65,7 @@ M.defaults = {
   },
   live_grep = {
     cmd = "rg",
-    args = { "-i", "--vimgrep", "." },
+    args = { "-i", "--vimgrep", "--max-count=10", "--max-filesize=1M", "." },
     limit = M.GREP_RESULT_LIMIT,
   },
   cache = {
