@@ -25,9 +25,7 @@ local function extract_selection(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return nil
   end
-  local count = vim.api.nvim_buf_line_count(buf)
-  local start = math.max(0, count - 5)
-  local lines = vim.api.nvim_buf_get_lines(buf, start, -1, false)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   for i = #lines, 1, -1 do
     if lines[i] and lines[i] ~= "" then
       return lines[i]
