@@ -3,7 +3,6 @@
 local M = {}
 
 local window = require("fzyf.window")
-local config = require("fzyf.config")
 local utils = require("fzyf.utils")
 
 ---@type {buf: number|nil, win: number|nil, job_id: number|nil}
@@ -19,55 +18,50 @@ local function has_nvim_011()
   return vim.fn.has("nvim-0.11") == 1
 end
 
+---Extract the last non-empty line from a terminal buffer
+---@param buf number Buffer handle
+---@return string|nil
+local function extract_selection(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return nil
+  end
+  local count = vim.api.nvim_buf_line_count(buf)
+  local start = math.max(0, count - 5)
+  local lines = vim.api.nvim_buf_get_lines(buf, start, -1, false)
+  for i = #lines, 1, -1 do
+    if lines[i] and lines[i] ~= "" then
+      return lines[i]
+    end
+  end
+  return nil
+end
+
 ---Open terminal with job (compatible with Neovim 0.10+)
 ---@param cmd string Command to run
 ---@param buf number Buffer to use
 ---@param on_exit fun(exit_code: number, selection: string|nil) Callback on exit
+---@param opts? {cwd: string|nil} Options
 ---@return number|nil job_id
-local function open_terminal_job(cmd, buf, on_exit)
-  -- Note: buftype is set automatically by jobstart with term=true
+local function open_terminal_job(cmd, buf, on_exit, opts)
+  opts = opts or {}
 
-  -- Use jobstart with term=true for Neovim 0.11+, termopen for older
-  local job_id
+  local function handle_exit(_, exit_code)
+    on_exit(exit_code, extract_selection(buf))
+  end
+
   if has_nvim_011() then
-    job_id = vim.fn.jobstart(cmd, {
+    return vim.fn.jobstart(cmd, {
       term = true,
-      on_exit = function(_, exit_code)
-        -- Get the last line from terminal buffer (the selection)
-        local selection = nil
-        if vim.api.nvim_buf_is_valid(buf) then
-          local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-          -- Get the last non-empty line
-          for i = #lines, 1, -1 do
-            if lines[i] and lines[i] ~= "" then
-              selection = lines[i]
-              break
-            end
-          end
-        end
-        on_exit(exit_code, selection)
-      end,
+      cwd = opts.cwd,
+      on_exit = handle_exit,
     })
   else
     ---@diagnostic disable-next-line: deprecated
-    job_id = vim.fn.termopen(cmd, {
-      on_exit = function(_, exit_code)
-        local selection = nil
-        if vim.api.nvim_buf_is_valid(buf) then
-          local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-          for i = #lines, 1, -1 do
-            if lines[i] and lines[i] ~= "" then
-              selection = lines[i]
-              break
-            end
-          end
-        end
-        on_exit(exit_code, selection)
-      end,
+    return vim.fn.termopen(cmd, {
+      cwd = opts.cwd,
+      on_exit = handle_exit,
     })
   end
-
-  return job_id
 end
 
 ---Cleanup current state
@@ -103,20 +97,8 @@ function M.open(cmd, on_select, opts)
   M.state.buf = buf
   M.state.win = win
 
-  -- Change to cwd if specified
-  local cwd_restore = nil
-  if opts.cwd then
-    cwd_restore = vim.fn.getcwd()
-    vim.cmd("lcd " .. vim.fn.fnameescape(opts.cwd))
-  end
-
   -- Open terminal
   M.state.job_id = open_terminal_job(cmd, buf, function(exit_code, selection)
-    -- Restore cwd
-    if cwd_restore then
-      vim.cmd("lcd " .. vim.fn.fnameescape(cwd_restore))
-    end
-
     -- Cleanup
     M.cleanup()
 
@@ -124,14 +106,11 @@ function M.open(cmd, on_select, opts)
     if exit_code == 0 and selection and selection ~= "" then
       on_select(selection)
     end
-  end)
+  end, { cwd = opts.cwd })
 
   -- Handle job start failure
   if not M.state.job_id or M.state.job_id <= 0 then
     M.cleanup()
-    if cwd_restore then
-      vim.cmd("lcd " .. vim.fn.fnameescape(cwd_restore))
-    end
     utils.error("Failed to start terminal job")
     return
   end

@@ -1,23 +1,27 @@
 ---@class Fzyf
----@field config FzyfConfig Configuration module
----@field commands FzyfCommands Commands module
----@field terminal FzyfTerminal Terminal module
----@field window FzyfWindow Window module
----@field cache FzyfCache Cache module
----@field utils FzyfUtils Utils module
----@field health FzyfHealth Health check module
----@field native FzyfNative Native fzy module
 local M = {}
 
--- Module references
+-- Lazy module accessors — modules load on first use
+local function lazy(mod)
+  return setmetatable({}, {
+    __index = function(_, k)
+      return require(mod)[k]
+    end,
+    __call = function(_, ...)
+      return require(mod)(...)
+    end,
+  })
+end
+
+-- Only config is needed at setup time; rest are lazy
 M.config = require("fzyf.config")
-M.commands = require("fzyf.commands")
-M.terminal = require("fzyf.terminal")
-M.window = require("fzyf.window")
-M.cache = require("fzyf.cache")
-M.utils = require("fzyf.utils")
-M.health = require("fzyf.health")
-M.native = require("fzyf.native")
+M.commands = lazy("fzyf.commands")
+M.terminal = lazy("fzyf.terminal")
+M.window = lazy("fzyf.window")
+M.cache = lazy("fzyf.cache")
+M.utils = lazy("fzyf.utils")
+M.health = lazy("fzyf.health")
+M.native = lazy("fzyf.native")
 
 -- Expose commands as direct functions for cleaner API
 -- Usage: require('fzyf').find_files() instead of require('fzyf').commands.find_files()
@@ -41,16 +45,17 @@ function M.setup(opts)
   M.config.setup(opts)
 
   -- Check dependencies
-  local ok, missing = M.utils.check_dependencies()
+  local utils = require("fzyf.utils")
+  local ok, missing = utils.check_dependencies()
   if not ok then
-    M.utils.warn(
+    utils.warn(
       string.format("Required binary '%s' not found. Some features may not work.", missing)
     )
   end
 
   -- Initialize native fzy if available
   if M.config.get_value("use_native_fzy") then
-    M.native.init()
+    require("fzyf.native").init()
   end
 
   -- Register commands
@@ -92,12 +97,13 @@ function M._setup_cleanup()
     group = group,
     callback = function()
       -- Close any open terminal
-      if M.terminal.state.job_id then
-        pcall(vim.fn.jobstop, M.terminal.state.job_id)
+      local terminal = require("fzyf.terminal")
+      if terminal.state.job_id then
+        pcall(vim.fn.jobstop, terminal.state.job_id)
       end
 
       -- Clear cache
-      M.cache.clear()
+      require("fzyf.cache").clear()
     end,
   })
 end

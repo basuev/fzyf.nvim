@@ -71,6 +71,9 @@ M.defaults = {
 ---@type FzyfConfig
 M.options = {}
 
+-- Cache for resolved config paths (invalidated on setup)
+local _resolved = {}
+
 ---Resolve a value that can be either a literal or a function
 ---@param value any
 ---@return any
@@ -86,6 +89,7 @@ end
 ---@return FzyfConfig
 function M.setup(opts)
   opts = opts or {}
+  _resolved = {}
   M.options = vim.tbl_deep_extend("force", M.defaults, opts)
   return M.options
 end
@@ -103,14 +107,31 @@ end
 ---@param key string Dot-separated key path (e.g., "win.width")
 ---@return any
 function M.get_value(key)
+  local cached = _resolved[key]
+  if cached ~= nil then
+    -- For function values, resolve each time (they may depend on window size etc.)
+    return resolve(cached)
+  end
+
+  local cfg = M.get()
+  -- Fast path: single-segment key (no dot)
+  if not key:find(".", 1, true) then
+    local value = cfg[key]
+    if value ~= nil then
+      _resolved[key] = value
+    end
+    return resolve(value)
+  end
+
   local parts = vim.split(key, ".", { plain = true })
-  local value = M.get()
+  local value = cfg
   for _, part in ipairs(parts) do
     value = value[part]
     if value == nil then
       return nil
     end
   end
+  _resolved[key] = value
   return resolve(value)
 end
 
